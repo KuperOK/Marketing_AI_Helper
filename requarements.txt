@@ -1,0 +1,7 @@
+openpyxl
+beautifulsoup4
+streamlit
+openai
+langchain
+langchain_community
+langchain-openai
