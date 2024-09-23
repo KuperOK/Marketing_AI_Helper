@@ -5,7 +5,7 @@ import openai
 import os
 from langchain_community.document_loaders import WebBaseLoader as WBL
 from langchain.prompts import ChatPromptTemplate
-from prompts import * #prompt_for_title
+from prompts import prompt_for_translate, prompt_for_ad_text, prompt_for_benefits, prompt_for_title, prompt_for_USP 
 from langchain_openai import ChatOpenAI
 import io
 from datetime import datetime

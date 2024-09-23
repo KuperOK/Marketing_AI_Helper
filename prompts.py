@@ -110,7 +110,8 @@ Show only your responses without any comments.
 Remember! Output text language must be {language}
 """
 
-prompt_for_translate = """You experienced translator and ploglit. \
+prompt_for_translate = """
+You experienced translator and ploglit. \
 Please translate the following marketing text from {source_language} to {target_language}.\
 Pay attention to style, context, and specific expressions. Save all formatting as in original text.\
 Text for translation:\n\
