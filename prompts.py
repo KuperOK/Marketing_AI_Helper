@@ -8,7 +8,10 @@ Example: Here's an example of a long product title for reference: {prod_long_nam
 
 Please generate three product title variations for the given technical information using this format and structure.
 Don't use any info from analog and don't use Device Name displayed in Network.
-Show only your names without any comments."""
+Show only your names without any comments.
+
+Remember! Output text language must be {language}
+"""
 
 
 prompt_for_benefits = """You are an expert in marketing and product descriptions. 
@@ -27,6 +30,8 @@ Here is an example for another item:
 - "Creative gift: transforms any room into a starry sky"
 
 Please generate three benefit descriptions for the given product not longer 80 symbols, focusing on how it solves user problems or adds value. Show only your responses without any comments.
+
+Remember! Output text language must be {language}
 """
 
 prompt_for_USP = """
@@ -69,6 +74,8 @@ Here is an example for another item:
 Please generate three different variants by six USP in eschbenefit descriptions for the given product, focusing on uniqueness, Customer Benefits and Competitive advantages.
 Length of each USP no more than 85 characters
 Show only your responses without any comments.
+
+Remember! Output text language must be {language}
 """
 
 prompt_for_ad_text = """
@@ -99,4 +106,13 @@ Please create 3 variations:
 Take into account - In advertising text you can add only info from technical specifications and dont use it from similar product. It is very importantly/
 Strictly prohibited using technical info of similar product for advertising texts only from {tech_info} 
 Show only your responses without any comments.
+
+Remember! Output text language must be {language}
+"""
+
+prompt_for_translate = """You experienced translator and ploglit. \
+Please translate the following marketing text from {source_language} to {target_language}.\
+Pay attention to style, context, and specific expressions. Save all formatting as in original text.\
+Text for translation:\n\
+{text_for_translation}
 """

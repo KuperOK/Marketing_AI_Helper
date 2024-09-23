@@ -13,6 +13,9 @@ from datetime import datetime
 en = '?language=en_GB&th=1'
 ge = '?th=1&language=de_DE&currency=EUR'
 
+os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
+openai.api_key = os.getenv('OPENAI_API_KEY')
+
 def get_title_and_text_from_amazon(url, lang):
     url = url + lang
     loader = WBL(web_path=url)
@@ -98,135 +101,219 @@ def get_technical_data(file_path: str) -> dict:
     return features, df
 
 
+lang_dict = {
+    "English": 'en',
+    "German": 'de',
+    "French": 'fr',
+    "Italian": 'it',
+    "Spanish": 'sp',
+    "Portuguese": 'pt',
+    "Dutch": 'dt'
+}
+
 
 st.title(':blue[Marketing AI Helper]')
 
-# 1. Data Upload Section
-st.header(":orange[Upload Analogue Product Data]")
+tab1, tab2 = st.tabs(["Generate AI Marketing Text", "Transalte AI Marketing Text"])
 
-url = st.text_input("Enter a hyperlink of similar product:")
-show_product_params = st.checkbox('Show analogue product params', value=False)
+############## TAB2 AI TRANSLATING #############
+with tab1:
+    # 1. Data Upload Section
+    st.header(":orange[Upload Analogue Product Data]")
 
-if 'product' not in st.session_state:
-    st.session_state.product = None
-if url and st.button('Retrieving'):
-    with st.spinner(text="Retrieving analogue product data is in progress ..."):
-        product = get_title_and_text_from_amazon(url, en)
-        st.session_state.product = product
-    # st.markdown("**Analogue long name:**")
-    if show_product_params:
-        prod_long_name = st.text_area("**Analogue long name:**" ,value=product['long name'])            
-        product_decription = st.text_area("Analogue description:", value=product['description'])            
-        product_comments = st.text_area("Analogue comments:", value=product['comments'])
-   
+    url = st.text_input("Enter a hyperlink of similar product:")
+    show_product_params = st.checkbox('Show analogue product params', value=False)
 
-uploaded_file = st.file_uploader("Upload Excel file:", type=["xlsx", "xls"])
-show_product_tinfo = st.checkbox('Show product tech info', value=False)
-if uploaded_file is not None:
-    tech_info, df = get_technical_data(uploaded_file)
-    df.columns = ['Feature', 'Value']
-    if show_product_tinfo:
-        st.subheader("Tech info from Excel file:")
-        # st.dataframe(pd.DataFrame([tech_info.keys(), tech_info.values()], columns=['Feature', 'Value']))
-        st.dataframe(df)
-
-
-# 2. Product Description Generation Section
-st.header(":green[Generate New Product Description]")
-
-# Block 1: Long Name Generation
-st.subheader("Generate Long Name")
-
-os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
-openai.api_key = os.getenv('OPENAI_API_KEY')
-
-llm_model = "gpt-4o-mini-2024-07-18" # chatgpt-4o-latest
-chat = ChatOpenAI(model=llm_model, temperature=0.5)
-
-prompt_long_name = st.text_area("Enter prompt for long name:", value=prompt_for_title, height=350)
-prompt_template_long_name = ChatPromptTemplate.from_template(prompt_long_name)
-# formatted_prompt = prompt_for_title.format(tech_info=tech_info, prod_long_name=prod_long_name)
-if  st.session_state.product and tech_info:
-    prompt_template_long_name = prompt_template_long_name.format(tech_info=tech_info, prod_long_name=st.session_state.product['long name'])
-
-
-if st.button("Generate Long Name"):
-    st.session_state.response_title = chat.invoke(prompt_template_long_name).content
-    st.text_area("Generated Long Name:", st.session_state.response_title, height=275)
-
-# Block 2: Benefits Generation
-st.subheader("Generate Product Benefits")
-prompt_benefits = st.text_area("Enter prompt for benefits:", value=prompt_for_benefits, height=500)
-if  st.session_state.product:
-    prompt_template_benefits = ChatPromptTemplate\
-        .from_template(prompt_benefits)\
-        .format(
-            tech_info=tech_info,
-            product_decription = st.session_state.product['description']
-            )
-if st.button("Generate Benefits"):
-    st.session_state.response_benefits = chat.invoke(prompt_template_benefits).content
+    if 'product' not in st.session_state:
+        st.session_state.product = None
+    if url and st.button('Retrieving'):
+        with st.spinner(text="Retrieving analogue product data is in progress ..."):
+            product = get_title_and_text_from_amazon(url, en)
+            st.session_state.product = product
+        if show_product_params:
+            prod_long_name = st.text_area("**Analogue long name:**" ,value=product['long name'])            
+            product_decription = st.text_area("Analogue description:", value=product['description'])            
+            product_comments = st.text_area("Analogue comments:", value=product['comments'])
     
-    with st.container(border=True, height=200):
-        st.write("Product Benefits: ")
-        st.markdown(st.session_state.response_benefits)
 
-# Block 3: USP Generation
-st.subheader("Generate USP")
-prompt_usp = st.text_area("Enter prompt for USP:", value=prompt_for_USP, height=700)
-if  st.session_state.product:
-    prompt_template_USP = ChatPromptTemplate\
-        .from_template(prompt_usp)\
-        .format(
+    uploaded_file = st.file_uploader("Upload Excel file:", type=["xlsx", "xls"])
+    show_product_tinfo = st.checkbox('Show product tech info', value=False)
+    if uploaded_file is not None:
+        tech_info, df = get_technical_data(uploaded_file)
+        df.columns = ['Feature', 'Value']
+        if show_product_tinfo:
+            st.subheader("Tech info from Excel file:")
+            st.dataframe(df)
+
+
+    # 2. Product Description Generation Section
+    st.header(":green[Generate New Product Description]")
+    language_output = st.selectbox(
+        label ="Select marketig text language ",
+        options = ("English", "German", "French", "German", "Italian", "Spanish", "Portuguese", "Dutch"),
+        index=None,
+        # placeholder="Select contact method...",
+    )
+
+    if language_output:
+        st.write(f"Selected: language: :red[{language_output}]")
+
+    # Block 1: Long Name Generation
+    st.subheader("Generate Long Name")
+
+
+    llm_model = "gpt-4o-mini-2024-07-18" # chatgpt-4o-latest
+    chat = ChatOpenAI(model=llm_model, temperature=0.5)
+
+    prompt_long_name = st.text_area("Enter prompt for long name:", value=prompt_for_title, height=350)
+    prompt_template_long_name = ChatPromptTemplate.from_template(prompt_long_name)
+    if  st.session_state.product and tech_info and language_output:
+        prompt_template_long_name = prompt_template_long_name.format(
             tech_info=tech_info,
-            product_decription = st.session_state.product['description'],
-            product_comments = st.session_state.product['comments']        
-        )
-if st.button("Generate USP"):
-    # # Add code to send a request to the ChatGPT API and get the result
-    # generated_usp = "Generated USP" # Replace with actual ChatGPT result
-    # st.text_area("Generated USP:", generated_usp)
-    st.session_state.response_USP = chat.invoke(prompt_template_USP).content
-    with st.container(border=True, height=500):
-        st.write("Product unique selling points (USP): ")
-        st.markdown(st.session_state.response_USP)
-
-# Block 4: Marketing Text Generation
-st.subheader("Generate Marketing Text")
-prompt_marketing_text = st.text_area("Enter prompt for advertisin text:", value=prompt_for_ad_text, height=700)
-if  st.session_state.product:
-    prompt_template_text = ChatPromptTemplate\
-        .from_template(prompt_marketing_text)\
-        .format(
-            tech_info=tech_info,
-            product_decription = st.session_state.product['description'],
-            product_comments = st.session_state.product['comments'] 
-        )
-if st.button("Generate Marketing Text"):
-    st.session_state.response_text = chat.invoke(prompt_template_text).content
-    with st.container(border=True, height=750):
-        st.write("Product adverising text: ")
-        st.markdown(st.session_state.response_text)
+            prod_long_name=st.session_state.product['long name'],
+            language=language_output
+            )
 
 
-# 3. Saving and Clearing Section
-st.header(":red[Save and Clear]")
+    if st.button("Generate Long Name"):
+        st.session_state.response_title = chat.invoke(prompt_template_long_name).content
+        st.text_area("Generated Long Name:", st.session_state.response_title, height=275)
 
-if st.button("Save Results"):
-    hs_code = tech_info.get('HS Code', 'xxxx')
-    filename = str(hs_code) + '_marketing_info_' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.txt'
-    all_togather = f"{st.session_state.response_title}\n{st.session_state.response_benefits}\n\n{st.session_state.response_USP}\n\n{st.session_state.response_text}"
-    buffer = io.BytesIO()
-    buffer.write(all_togather.encode("utf-8"))
-    buffer.seek(0)
-    if st.download_button(
-                label="Download File",
-                data=buffer,
-                file_name=filename,
-                mime="text/plain"
-            ):
-        st.success("Results saved!")
+    # Block 2: Benefits Generation
+    st.subheader("Generate Product Benefits")
+    prompt_benefits = st.text_area("Enter prompt for benefits:", value=prompt_for_benefits, height=500)
+    if  st.session_state.product and language_output:
+        prompt_template_benefits = ChatPromptTemplate\
+            .from_template(prompt_benefits)\
+            .format(
+                tech_info=tech_info,
+                product_decription = st.session_state.product['description'],
+                language=language_output
+                )
+    if st.button("Generate Benefits"):
+        st.session_state.response_benefits = chat.invoke(prompt_template_benefits).content
+        
+        with st.container(border=True, height=200):
+            st.write("Product Benefits: ")
+            st.markdown(st.session_state.response_benefits)
 
-# if st.button("Clear"):
-#     # Add code to clear all input fields and results
-#     st.experimental_rerun()
+    # Block 3: USP Generation
+    st.subheader("Generate USP")
+    prompt_usp = st.text_area("Enter prompt for USP:", value=prompt_for_USP, height=700)
+    if  st.session_state.product and language_output:
+        prompt_template_USP = ChatPromptTemplate\
+            .from_template(prompt_usp)\
+            .format(
+                tech_info=tech_info,
+                product_decription = st.session_state.product['description'],
+                product_comments = st.session_state.product['comments'],
+                language=language_output       
+            )
+    if st.button("Generate USP"):
+        st.session_state.response_USP = chat.invoke(prompt_template_USP).content
+        with st.container(border=True, height=500):
+            st.write("Product unique selling points (USP): ")
+            st.markdown(st.session_state.response_USP)
+
+    # Block 4: Marketing Text Generation
+    st.subheader("Generate Marketing Text")
+    prompt_marketing_text = st.text_area("Enter prompt for advertisin text:", value=prompt_for_ad_text, height=700)
+    if  st.session_state.product and language_output:
+        prompt_template_text = ChatPromptTemplate\
+            .from_template(prompt_marketing_text)\
+            .format(
+                tech_info=tech_info,
+                product_decription = st.session_state.product['description'],
+                product_comments = st.session_state.product['comments'],
+                language=language_output 
+            )
+    if st.button("Generate Marketing Text"):
+        st.session_state.response_text = chat.invoke(prompt_template_text).content
+        with st.container(border=True, height=750):
+            st.write("Product adverising text: ")
+            st.markdown(st.session_state.response_text)
+
+
+    # 3. Saving and Clearing Section
+    st.header(":red[Save all genrated texts]")
+
+    if st.button("Save Results"):
+        hs_code = tech_info.get('HS Code', 'xxxx')
+        lang = lang_dict.get(language_output, 'unknown')
+        filename = f'{lang}_' + str(hs_code) + '_marketing_info_' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.txt'
+        all_togather = f"{st.session_state.response_title}\n{st.session_state.response_benefits}\n\n{st.session_state.response_USP}\n\n{st.session_state.response_text}"
+        buffer = io.BytesIO()
+        buffer.write(all_togather.encode("utf-8"))
+        buffer.seek(0)
+        if st.download_button(
+                    label="Download File",
+                    data=buffer,
+                    file_name=filename,
+                    mime="text/plain"
+                ):
+            st.success("Results saved!")
+
+############## TAB2 AI TRANSLATING #############
+with tab2:
+
+    st.session_state.lang_from = None
+    st.session_state.lang_to = None
+
+    rev_lang_dict = {v: k for k, v in lang_dict.items()}
+    st.header('Translate AI Marketing text')
+    file_to_translate = st.file_uploader("Upload marketing texts file:", type="txt")
+    # print(type(file_to_translate), file_to_translate)
+    if file_to_translate:
+        file_name = file_to_translate.name
+        lang_from = file_name[:2]
+        text = file_to_translate.read().decode("utf-8")
+        st.session_state.lang_from = lang_from
+
+    lang_to_translate = st.selectbox(
+        label ="Select language translate to",
+        options = ("English", "German", "French", "Italian", "Spanish", "Portuguese", "Dutch"),
+        index=1,
+        # placeholder="Select contact method...",
+    )
+    
+    st.session_state.lang_to = None
+    st.session_state.translated_text = None
+
+    if st.session_state.lang_from and file_to_translate:
+        prompt_translate =  ChatPromptTemplate\
+            .from_template(prompt_for_translate)\
+            .format(
+                source_language=rev_lang_dict[lang_from],
+                target_language = lang_to_translate,
+                text_for_translation=text 
+            )
+        print(prompt_translate)
+        # st.write(f"Selected: language: :red[{language_output}]")
+        st.write(f'Translate text from :green[{rev_lang_dict[lang_from].upper()}] to :orange[{lang_to_translate.upper()}]')
+        llm_model = st.selectbox(
+                "Select LLM",
+                ("gpt-4o-mini-2024-07-18", "chatgpt-4o-latest"))
+    
+    if st.button('Translate'):
+        with st.spinner(text="AI translation in progress ..."):
+            
+            trans_chat = ChatOpenAI(model_name=llm_model, temperature=0)
+            st.session_state.translated_text = trans_chat.invoke(prompt_translate).content
+            print(st.session_state.translated_text)
+            st.text_area(f"Original {rev_lang_dict[lang_from].upper()} text:", value=text, height=500)
+            st.text_area(f"Translated to {lang_to_translate.upper()} text:", value=st.session_state.translated_text, height=500)
+
+
+        lang = lang_dict.get(lang_to_translate, 'unknown')
+        filename = f'{lang}_from_{lang_from}' + file_name[2:-19] + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.txt'
+    
+        buffer = io.BytesIO()
+        buffer.write(st.session_state.translated_text.encode("utf-8"))
+        buffer.seek(0)
+        if st.download_button(
+                    label="Download traslated file",
+                    data=buffer,
+                    file_name=filename,
+                    mime="text/plain"
+                ):
+            st.success("Results saved!")
