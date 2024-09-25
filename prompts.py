@@ -116,4 +116,6 @@ Please translate the following marketing text from {source_language} to {target_
 Pay attention to style, context, and specific expressions. Save all formatting as in original text.\
 Text for translation:\n\
 {text_for_translation}
+
+Don't add any your comments and descriptions, must be only your translation
 """
